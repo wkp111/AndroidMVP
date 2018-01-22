@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>com.wkp.android.mvp</id>
   <name>AndroidMVP</name>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <vendor email="wkp15889686524@gmail.com" url="https://github.com/wkp111">WKP</vendor>
 
   <description><![CDATA[
