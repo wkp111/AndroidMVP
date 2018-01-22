@@ -15,7 +15,7 @@ File --> Settings --> Plugins --> Browse repositories... --> 搜索AndroidMVP --
 * Alt+Insert打开Generate界面 --> 选择MVP Interface    或    快捷键Alt+M</br></br>
 > 2.效果图例<br/>
 ![AndroidMVP](https://github.com/wkp111/AndroidMVP/blob/master/AndroidMVP.gif "使用图例")
-## 欢迎大神分享自己的优秀工具类
+## 欢迎大神分享自己的意见或建议
 > 邮箱：<br>
 * qqEmail ：1535514884@qq.com<br>
 * gmail   ：wkp15889686524@gmail.com<br>
