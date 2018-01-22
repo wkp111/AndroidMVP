@@ -2,12 +2,8 @@ package com.wkp.mvp;
 
 import com.intellij.codeInsight.CodeInsightActionHandler;
 import com.intellij.codeInsight.actions.*;
-import com.intellij.codeInsight.editorActions.SimpleTokenSetQuoteHandler;
 import com.intellij.codeInsight.generation.OverrideImplementUtil;
 import com.intellij.codeInsight.generation.actions.BaseGenerateAction;
-import com.intellij.codeInsight.intention.impl.FieldFromParameterUtils;
-import com.intellij.formatting.FormatterTestUtils;
-import com.intellij.formatting.engine.FormatProcessorUtils;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -15,33 +11,13 @@ import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.command.WriteCommandAction;
-import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
-import com.intellij.psi.codeStyle.ChangedRangesInfo;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
-import com.intellij.psi.codeStyle.arrangement.FieldDependenciesManager;
-import com.intellij.psi.formatter.FormatterUtil;
-import com.intellij.psi.impl.source.*;
-import com.intellij.psi.impl.source.tree.PsiWhiteSpaceImpl;
-import com.intellij.psi.impl.source.tree.java.PsiJavaTokenImpl;
-import com.intellij.psi.impl.source.tree.java.PsiKeywordImpl;
-import com.intellij.psi.javadoc.PsiDocTag;
 import com.intellij.psi.search.PsiShortNamesCache;
-import com.intellij.psi.tree.IElementType;
-import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.psi.util.PsiUtil;
 import com.intellij.refactoring.move.moveFilesOrDirectories.MoveFilesOrDirectoriesUtil;
-import com.intellij.refactoring.psi.MethodInheritanceUtils;
-import com.intellij.util.IncorrectOperationException;
-import com.intellij.util.diff.FilesTooBigForDiffException;
-import jdk.internal.dynalink.linker.LinkerServices;
-import org.jetbrains.annotations.NotNull;
-
-import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 public class CreateInterfaceAction extends BaseGenerateAction {
@@ -217,6 +193,9 @@ public class CreateInterfaceAction extends BaseGenerateAction {
             currentStatement.delete();
         }
 
+        //移动文件到指定包下
+        MoveFilesOrDirectoriesUtil.doMoveFile(mActivityFile, activityDirectory);
+
         //实现view接口
         boolean hasImplements = false;
         PsiReferenceList implementsList = mTargetClass.getImplementsList();
@@ -322,17 +301,15 @@ public class CreateInterfaceAction extends BaseGenerateAction {
                 mStyleManager.optimizeImports(mTargetClass.getContainingFile());
                 mStyleManager.shortenClassReferences(mTargetClass);
                 //格式化代码
-                LastRunReformatCodeOptionsProvider provider = new LastRunReformatCodeOptionsProvider(PropertiesComponent.getInstance());
-                ReformatCodeRunOptions currentRunOptions = provider.getLastRunOptions(mActivityFile);
-                TextRangeType textRangeType = TextRangeType.WHOLE_FILE;
-                currentRunOptions.setProcessingScope(textRangeType);
-                (new FileInEditorProcessor(mActivityFile, mEditor, currentRunOptions)).processCode();
-//                CodeStyleManager.getInstance(mProject).reformat(mTargetClass);
+//                ReformatCodeAction
+//                LastRunReformatCodeOptionsProvider provider = new LastRunReformatCodeOptionsProvider(PropertiesComponent.getInstance());
+//                ReformatCodeRunOptions currentRunOptions = provider.getLastRunOptions(mActivityFile);
+//                TextRangeType textRangeType = TextRangeType.WHOLE_FILE;
+//                currentRunOptions.setProcessingScope(textRangeType);
+//                (new FileInEditorProcessor(mActivityFile, mEditor, currentRunOptions)).processCode();
+                CodeStyleManager.getInstance(mProject).reformatText(mActivityFile,0,mActivityFile.getTextLength());
             }
         }
-
-        //移动文件到指定包下
-        MoveFilesOrDirectoriesUtil.doMoveFile(mActivityFile, activityDirectory);
     }
 
     /**
@@ -511,7 +488,8 @@ public class CreateInterfaceAction extends BaseGenerateAction {
         PsiFile modelFile = interDirectory.findFile(getInterJavaFile(UP_MODEL));
         PsiClass modelInter = null;
         if (modelFile == null) {
-            modelInter = mDirectoryService.createInterface(interDirectory, getInterJavaClass(UP_MODEL));
+//            modelInter = mDirectoryService.createInterface(interDirectory, getInterJavaClass(UP_MODEL));
+            modelInter = (PsiClass) interDirectory.add(createPresenterOrModelInterJava(getInterJavaClass(UP_MODEL)));
         } else {
             modelInter = mNamesCache.getClassesByName(getInterJavaClass(UP_MODEL), interDirectory.getResolveScope())[0];
         }
@@ -534,7 +512,8 @@ public class CreateInterfaceAction extends BaseGenerateAction {
         PsiFile presenterFile = interDirectory.findFile(getInterJavaFile(UP_PRESENTER));
         PsiClass presenterInter = null;
         if (presenterFile == null) {
-            presenterInter = mDirectoryService.createInterface(interDirectory, getInterJavaClass(UP_PRESENTER));
+//            presenterInter = mDirectoryService.createInterface(interDirectory, getInterJavaClass(UP_PRESENTER));
+            presenterInter = (PsiClass) interDirectory.add(createPresenterOrModelInterJava(getInterJavaClass(UP_PRESENTER)));
         } else {
             presenterInter = mNamesCache.getClassesByName(getInterJavaClass(UP_PRESENTER), interDirectory.getResolveScope())[0];
         }
@@ -581,6 +560,18 @@ public class CreateInterfaceAction extends BaseGenerateAction {
         String content = "public interface " + name + " { \n" +
                 "//请求标记\n int REQUEST_ONE = 0; int REQUEST_TWO = 1; int REQUEST_THREE = 2; \n//响应标记\n int RESPONSE_ONE = 0; int RESPONSE_TWO = 1; "
                 + "int RESPONSE_THREE = 2; <T> T request(int requestFlag); <T> void response(T response,int responseFlag);}";
+        return ((PsiJavaFile) mPsiFileFactory.createFileFromText(name + ".java", type, content)).getClasses()[0];
+    }
+
+    /**
+     * 创建presenter/model的interface模板类
+     *
+     * @param name
+     * @return
+     */
+    private PsiClass createPresenterOrModelInterJava(String name) {
+        JavaFileType type = JavaFileType.INSTANCE;
+        String content = "public interface " + name + " {}";
         return ((PsiJavaFile) mPsiFileFactory.createFileFromText(name + ".java", type, content)).getClasses()[0];
     }
 
