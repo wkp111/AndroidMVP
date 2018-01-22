@@ -9,7 +9,7 @@ Android Studio/IDEA开发快速创建MVP框架，在Activity或Fragment中使用
 File --> Settings --> Plugins --> Install plugin from disk... --> Utils.jar --> Apply --> Restart Android Studio</br></br>
 > 2.JetBrains仓库搜索
 * 集成方式</br>
-File --> Settings --> Plugins --> Browse repositories... --> 搜索AndroidMVP --> Download --> Restart Android Studio
+File --> Settings --> Plugins --> Browse repositories... --> 搜索AndroidMVP --> Install --> Restart Android Studio
 ### 插件使用方式及效果
 > 1.使用方式
 * Alt+Insert打开Generate界面 --> 选择MVP Interface    或    快捷键Alt+M</br></br>
